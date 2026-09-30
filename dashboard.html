@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roaming Routes — Meta Ads Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0b0f1a; color: #cbd5e1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 32px 40px; min-height: 100vh; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; }
+    .header-left h1 { font-size: 20px; font-weight: 700; color: #f1f5f9; letter-spacing: -0.3px; }
+    .header-left p { color: #64748b; font-size: 13px; margin-top: 4px; }
+    .header-badge { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 6px 14px; font-size: 12px; color: #94a3b8; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 28px; }
+    .kpi-card { background: #111827; border: 1px solid #1e293b; border-radius: 10px; padding: 20px 20px 16px; }
+    .kpi-label { font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+    .kpi-value { font-size: 30px; font-weight: 700; color: #f1f5f9; line-height: 1; }
+    .kpi-unit { font-size: 14px; color: #64748b; font-weight: 400; margin-left: 2px; }
+    .kpi-delta { font-size: 12px; margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+    .kpi-delta.pos { color: #34d399; }
+    .kpi-delta.neg { color: #f87171; }
+    .kpi-delta.neu { color: #94a3b8; }
+    .kpi-sub { font-size: 11px; color: #475569; margin-top: 4px; }
+    .section { margin-bottom: 28px; }
+    .section-header { font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; }
+    .card { background: #111827; border: 1px solid #1e293b; border-radius: 10px; padding: 22px; }
+    .card h3 { font-size: 12px; color: #64748b; margin-bottom: 18px; font-weight: 500; }
+    .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .chart-row.single { grid-template-columns: 1fr; }
+    .table-card { background: #111827; border: 1px solid #1e293b; border-radius: 10px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { border-bottom: 1px solid #1e293b; }
+    th { padding: 11px 18px; font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; font-weight: 500; }
+    td { padding: 13px 18px; font-size: 13px; color: #cbd5e1; border-bottom: 1px solid #0f172a; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #0f172a; }
+    td strong { color: #f1f5f9; }
+    td .dim { color: #64748b; font-size: 11px; }
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 600; }
+    .badge.green  { background: #064e3b; color: #34d399; }
+    .badge.yellow { background: #451a03; color: #fbbf24; }
+    .badge.red    { background: #450a0a; color: #f87171; }
+    .badge.gray   { background: #1e293b; color: #64748b; }
+    .badge.blue   { background: #0c1a3a; color: #60a5fa; }
+    .badge.orange { background: #431407; color: #fb923c; }
+    .cpr-good { color: #34d399; font-weight: 600; }
+    .cpr-ok   { color: #fbbf24; }
+    .cpr-bad  { color: #f87171; }
+    .note { background: #0f172a; border-left: 3px solid #334155; border-radius: 4px; padding: 12px 16px; font-size: 12px; color: #64748b; margin-top: 14px; line-height: 1.6; }
+    .note strong { color: #94a3b8; }
+    .note.warn { border-left-color: #f87171; }
+    .divider { height: 1px; background: #1e293b; margin: 28px 0; }
+    .toggle-group { display: flex; gap: 8px; margin-bottom: 16px; }
+    .toggle-btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid #334155; background: #0f172a; color: #64748b; transition: all 0.15s ease; }
+    .toggle-btn:hover { border-color: #475569; color: #94a3b8; }
+    .toggle-btn.active-blue   { background: #1e3a5f; border-color: #3b82f6; color: #60a5fa; }
+    .toggle-btn.active-green  { background: #064e3b; border-color: #10b981; color: #34d399; }
+    .toggle-btn.active-violet { background: #2e1065; border-color: #8b5cf6; color: #a78bfa; }
+    .footer { margin-top: 36px; font-size: 11px; color: #334155; text-align: center; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <h1>Roaming Routes — Meta Ads Performance</h1>
+    <p>Sep 1–29, 2026 &nbsp;·&nbsp; UAE only &nbsp;·&nbsp; WhatsApp CTWA &nbsp;·&nbsp; vs Aug 1–29, 2026</p>
+  </div>
+  <div class="header-badge">Updated Sep 30, 2026</div>
+</div>
+
+<!-- KPI SCORECARDS -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-label">Conversations</div>
+    <div class="kpi-value">43</div>
+    <div class="kpi-delta neg">▼ 29.5% vs Aug (61)</div>
+    <div class="kpi-sub">Engagement campaign only</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Avg CPR</div>
+    <div class="kpi-value">39.96<span class="kpi-unit">AED</span></div>
+    <div class="kpi-delta neg">▲ 18.5% vs Aug (33.73)</div>
+    <div class="kpi-sub">Benchmark: 16.64 AED</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Total Spend</div>
+    <div class="kpi-value">4,502<span class="kpi-unit">AED</span></div>
+    <div class="kpi-delta neu">3 campaigns active</div>
+    <div class="kpi-sub">Eng + Messages + Traffic</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Link Clicks → WA</div>
+    <div class="kpi-value">941</div>
+    <div class="kpi-delta pos">▲ 35.6% vs Aug (694)</div>
+    <div class="kpi-sub">Engagement + Messages</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Daily Budget</div>
+    <div class="kpi-value">155<span class="kpi-unit">AED</span></div>
+    <div class="kpi-delta neu">120 Eng · 35 Traffic</div>
+    <div class="kpi-sub">+ Messages ~60 AED/day</div>
+  </div>
+</div>
+
+<!-- CAMPAIGN TABLE -->
+<div class="section">
+  <div class="section-header">Campaign Overview — Sep vs Aug</div>
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Campaign</th>
+          <th>Spend Sep</th>
+          <th>Results Sep</th>
+          <th>CPR Sep</th>
+          <th>Spend Aug</th>
+          <th>Results Aug</th>
+          <th>CPR Aug</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong>16 june / leads – Engagement</strong><br>
+            <span class="dim">Objective: Engagement · CTWA → WhatsApp</span>
+          </td>
+          <td>1,718 AED</td>
+          <td>43 conv</td>
+          <td class="cpr-bad">39.96 AED</td>
+          <td>2,058 AED</td>
+          <td>61 conv</td>
+          <td class="cpr-ok">33.73 AED</td>
+          <td><span class="badge yellow">Active</span></td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Aug – Messages Objective</strong><br>
+            <span class="dim">Objective: Engagement · Maximize leads through messaging</span>
+          </td>
+          <td>1,768 AED</td>
+          <td>⚠️ 0 tracked</td>
+          <td class="cpr-bad">— (tracking)</td>
+          <td>1,461 AED</td>
+          <td>0 tracked</td>
+          <td>—</td>
+          <td><span class="badge orange">Tracking gap</span></td>
+        </tr>
+        <tr>
+          <td>
+            <strong>INSTGRAM VISIT – Traffic</strong><br>
+            <span class="dim">Objective: Traffic · IG Profile Visits</span>
+          </td>
+          <td>1,015 AED</td>
+          <td>11,088 visits</td>
+          <td class="cpr-good">0.09 AED/visit</td>
+          <td>1,016 AED</td>
+          <td>13,792 visits</td>
+          <td class="cpr-good">0.07 AED/visit</td>
+          <td><span class="badge gray">Awareness</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note warn">
+    <strong>⚠️ Messages campaign:</strong> 1,768 AED spent in September with 0 tracked conversions — WhatsApp event integration not resolved. 500 link clicks at 3.50 AED/click confirm delivery, but CPR cannot be calculated. Blocking final test recommendation to Reem.
+  </div>
+</div>
+
+<!-- CHARTS -->
+<div class="section">
+  <div class="section-header">Daily Performance — Sep 1–29</div>
+  <div class="chart-row">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="margin-bottom:0" id="mainChartTitle">Link Clicks → WhatsApp per day</h3>
+        <div class="toggle-group" style="margin-bottom:0">
+          <button class="toggle-btn" onclick="switchMetric('conv', this)">Conversations</button>
+          <button class="toggle-btn active-violet" onclick="switchMetric('clicks', this)">Link Clicks → WA</button>
+          <button class="toggle-btn" onclick="switchMetric('visits', this)">Profile Visits</button>
+        </div>
+      </div>
+      <canvas id="convChart" height="180"></canvas>
+    </div>
+    <div class="card">
+      <h3>Cost per result (AED) — Engagement campaign · benchmark 16.64</h3>
+      <canvas id="cprChart" height="180"></canvas>
+    </div>
+  </div>
+  <div class="chart-row single">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="margin-bottom:0" id="spendChartTitle">Daily spend (AED) vs Link Clicks → WhatsApp</h3>
+        <div class="toggle-group" style="margin-bottom:0">
+          <button class="toggle-btn" onclick="switchSpendMetric('conv', this)">Conversations</button>
+          <button class="toggle-btn active-violet" onclick="switchSpendMetric('clicks', this)">Link Clicks → WA</button>
+          <button class="toggle-btn" onclick="switchSpendMetric('visits', this)">Profile Visits</button>
+        </div>
+      </div>
+      <canvas id="spendChart" height="100"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- AD PERFORMANCE TABLE -->
+<div class="section">
+  <div class="section-header">Ad Performance — Sep vs Aug</div>
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Ad</th>
+          <th>Conv Sep</th>
+          <th>Spend Sep</th>
+          <th>CPR Sep</th>
+          <th>Conv Aug</th>
+          <th>CPR Aug</th>
+          <th>Link Clicks Sep</th>
+          <th>CPC Sep</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>italy (Engagement)</strong><br><span class="dim">open ad set · Feed+Stories</span></td>
+          <td>10</td>
+          <td>370.86 AED</td>
+          <td class="cpr-ok">37.09 AED</td>
+          <td>3</td>
+          <td class="cpr-good">12.21 AED</td>
+          <td>361</td>
+          <td class="cpr-ok">1.03 AED</td>
+          <td><span class="badge yellow">Monitor CPR</span></td>
+        </tr>
+        <tr>
+          <td><strong>maldives (Engagement)</strong><br><span class="dim">open ad set · Stories</span></td>
+          <td>32</td>
+          <td>1,099.96 AED</td>
+          <td class="cpr-ok">34.37 AED</td>
+          <td>52</td>
+          <td class="cpr-ok">34.61 AED</td>
+          <td>51</td>
+          <td class="cpr-bad">21.57 AED</td>
+          <td><span class="badge yellow">Stable CPR · low CTR</span></td>
+        </tr>
+        <tr>
+          <td><strong>italy arabic (Engagement)</strong><br><span class="dim">detailed audiences · Feed+Stories</span></td>
+          <td>1</td>
+          <td>247.62 AED</td>
+          <td class="cpr-bad">247.62 AED</td>
+          <td>6</td>
+          <td class="cpr-ok">36.88 AED</td>
+          <td>29</td>
+          <td class="cpr-bad">8.54 AED</td>
+          <td><span class="badge red">Pause — CPR critical</span></td>
+        </tr>
+        <tr>
+          <td><strong>italy Copy (Messages)</strong><br><span class="dim">open test ad set</span></td>
+          <td>0 tracked</td>
+          <td>620.39 AED</td>
+          <td>—</td>
+          <td>0 tracked</td>
+          <td>—</td>
+          <td>449</td>
+          <td class="cpr-good">1.38 AED</td>
+          <td><span class="badge orange">Tracking gap</span></td>
+        </tr>
+        <tr>
+          <td><strong>maldives Copy (Messages)</strong><br><span class="dim">open test ad set</span></td>
+          <td>0 tracked</td>
+          <td>1,126.05 AED</td>
+          <td>—</td>
+          <td>0 tracked</td>
+          <td>—</td>
+          <td>50</td>
+          <td class="cpr-bad">22.52 AED</td>
+          <td><span class="badge red">High CPC — review</span></td>
+        </tr>
+        <tr>
+          <td><strong>italy 2026 (Traffic)</strong><br><span class="dim">Profile visits · Feed</span></td>
+          <td>—</td>
+          <td>1,015.34 AED</td>
+          <td class="dim">0.09 AED/visit</td>
+          <td>—</td>
+          <td class="dim">0.07 AED/visit</td>
+          <td>11,129</td>
+          <td class="cpr-good">0.09 AED</td>
+          <td><span class="badge gray">Awareness</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note warn">
+    <strong>italy arabic (detailed audiences):</strong> CPR 247.62 AED — 15x over benchmark. Only 1 conversation in 29 days from 247 AED spend. Recommend immediate pause. <strong>maldives Copy (Messages):</strong> CPC 22.52 AED with 0 tracked results — highest cost per click in the account with no measurable output.
+  </div>
+</div>
+
+<!-- PERIODS TABLE -->
+<div class="section">
+  <div class="section-header">Performance Trend — Monthly Comparison</div>
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Period</th>
+          <th>Conv (Engagement)</th>
+          <th>CPR</th>
+          <th>WA Link Clicks</th>
+          <th>CPC → WA</th>
+          <th>Total Spend</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>July 2026</strong></td>
+          <td>97</td>
+          <td class="cpr-ok">32.88 AED</td>
+          <td>7,879</td>
+          <td class="cpr-good">0.59 AED</td>
+          <td>4,616 AED</td>
+          <td><span class="badge blue">Baseline post-changes</span></td>
+        </tr>
+        <tr>
+          <td><strong>August 2026</strong></td>
+          <td>61</td>
+          <td class="cpr-ok">33.73 AED</td>
+          <td>694</td>
+          <td class="cpr-good">2.97 AED</td>
+          <td>~3,550 AED</td>
+          <td><span class="badge blue">Messages test launched</span></td>
+        </tr>
+        <tr>
+          <td><strong>September 2026</strong></td>
+          <td>43</td>
+          <td class="cpr-bad">39.96 AED</td>
+          <td>941</td>
+          <td class="cpr-ok">3.90 AED</td>
+          <td>4,502 AED</td>
+          <td><span class="badge red">▼ conv · ▲ CPR · tracking blocked</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note warn">
+    <strong>Trend alert:</strong> Conversations declining 3 months in a row (97 → 61 → 43) while CPR increases. The Messages campaign spending ~1,768 AED/month with unresolved tracking is inflating total spend without measurable output. Resolving the WhatsApp event integration is the critical blocker before any budget decision.
+  </div>
+</div>
+
+<div class="footer">
+  Roaming Routes · InHaus Digital · Meta Ads · Data: Sep 1–29, 2026 · Updated Sep 30
+</div>
+
+<script>
+  const days = [
+    'Sep 1','Sep 2','Sep 3','Sep 4','Sep 5','Sep 6','Sep 7','Sep 8','Sep 9','Sep 10',
+    'Sep 11','Sep 12','Sep 13','Sep 14','Sep 15','Sep 16','Sep 17','Sep 18','Sep 19','Sep 20',
+    'Sep 21','Sep 22','Sep 23','Sep 24','Sep 25','Sep 26','Sep 27','Sep 28','Sep 29'
+  ];
+
+  const conv   = [2,0,3,0,0,1,2,1,2,1,0,1,2,2,1,1,2,1,4,3,4,2,0,1,3,1,1,1,1];
+  const clicks = [402,452,416,433,386,569,470,441,414,389,424,371,435,454,461,428,402,334,366,515,458,407,367,347,351,318,454,406,400];
+  const visits = [364,407,338,360,336,493,396,392,378,363,396,350,402,419,436,418,393,331,361,506,447,393,364,341,340,289,374,356,345];
+  const spend  = [157.83,137.66,154.99,129.52,126.34,221.41,204.37,151.14,145.96,139.13,111.93,109.61,171.44,201.63,182.42,151.91,131.33,125.29,119.22,198.64,177.46,178.33,145.21,144.65,134.04,105.49,212.85,169.21,162.83];
+  const cpr    = [78.92,null,51.66,null,null,221.41,102.19,151.14,72.98,139.13,null,109.61,85.72,100.81,182.42,151.91,65.67,125.29,29.80,66.21,44.37,89.17,null,144.65,44.68,105.49,212.85,169.21,162.83];
+
+  const gridColor = '#1e293b';
+  const tickColor = '#475569';
+  const tickFont  = { size: 10 };
+  const baseScales = {
+    x: { ticks: { color: tickColor, font: tickFont }, grid: { color: gridColor } },
+    y: { ticks: { color: tickColor, font: tickFont }, grid: { color: gridColor } }
+  };
+
+  const metrics = {
+    conv: { label: 'Conversations', data: conv, color: '#3b82f6', title: 'Conversations per day — Engagement Campaign', activeClass: 'active-blue' },
+    clicks: { label: 'Link Clicks → WhatsApp', data: clicks, color: '#8b5cf6', title: 'Link Clicks → WhatsApp per day — All Campaigns', activeClass: 'active-violet' },
+    visits: { label: 'Profile Visits', data: visits, color: '#10b981', title: 'Instagram Profile Visits per day — Traffic Campaign', activeClass: 'active-green' }
+  };
+
+  const convChart = new Chart(document.getElementById('convChart'), {
+    type: 'bar',
+    data: { labels: days, datasets: [{ label: 'Link Clicks → WhatsApp', data: clicks, backgroundColor: '#8b5cf6', borderRadius: 3 }] },
+    options: { responsive: true, animation: { duration: 400 }, plugins: { legend: { display: false } }, scales: baseScales }
+  });
+  document.getElementById('mainChartTitle').textContent = metrics.clicks.title;
+
+  function switchMetric(key, btn) {
+    const m = metrics[key];
+    convChart.data.datasets[0].label = m.label;
+    convChart.data.datasets[0].data  = m.data;
+    convChart.data.datasets[0].backgroundColor = m.color;
+    convChart.update();
+    document.getElementById('mainChartTitle').textContent = m.title;
+    btn.closest('.toggle-group').querySelectorAll('.toggle-btn').forEach(b => b.className = 'toggle-btn');
+    btn.classList.add(m.activeClass);
+  }
+
+  new Chart(document.getElementById('cprChart'), {
+    type: 'line',
+    data: {
+      labels: days,
+      datasets: [
+        { label: 'CPR (AED)', data: cpr, borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.07)', fill: true, tension: 0.35, pointRadius: 3, pointBackgroundColor: '#f87171', spanGaps: false },
+        { label: 'Benchmark 16.64', data: new Array(29).fill(16.64), borderColor: '#34d399', borderDash: [5,4], pointRadius: 0, borderWidth: 1.5 }
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { labels: { color: '#64748b', font: { size: 11 } } } }, scales: baseScales }
+  });
+
+  const spendChart = new Chart(document.getElementById('spendChart'), {
+    type: 'bar',
+    data: {
+      labels: days,
+      datasets: [
+        { label: 'Daily Spend (AED)', data: spend, backgroundColor: 'rgba(99,102,241,0.55)', borderRadius: 3, yAxisID: 'y' },
+        { label: 'Link Clicks → WhatsApp', data: clicks, type: 'line', borderColor: '#8b5cf6', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#8b5cf6', borderWidth: 2, yAxisID: 'y1' }
+      ]
+    },
+    options: {
+      responsive: true, animation: { duration: 400 },
+      plugins: { legend: { labels: { color: '#64748b', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: tickColor, font: tickFont }, grid: { color: gridColor } },
+        y: { ticks: { color: tickColor, font: tickFont }, grid: { color: gridColor }, title: { display: true, text: 'Spend (AED)', color: '#475569', font: { size: 11 } } },
+        y1: { position: 'right', ticks: { color: tickColor, font: tickFont }, grid: { drawOnChartArea: false }, title: { display: true, text: 'Link Clicks', color: '#475569', font: { size: 11 } } }
+      }
+    }
+  });
+
+  function switchSpendMetric(key, btn) {
+    const m = metrics[key];
+    const ds = spendChart.data.datasets[1];
+    ds.label = m.label; ds.data = m.data; ds.borderColor = m.color; ds.pointBackgroundColor = m.color;
+    spendChart.options.scales.y1.title.text = m.label;
+    spendChart.update();
+    document.getElementById('spendChartTitle').textContent = 'Daily spend (AED) vs ' + m.label.toLowerCase();
+    btn.closest('.toggle-group').querySelectorAll('.toggle-btn').forEach(b => b.className = 'toggle-btn');
+    btn.classList.add(m.activeClass);
+  }
+</script>
+</body>
+</html>
