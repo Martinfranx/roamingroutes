@@ -123,7 +123,23 @@
     @media print {
       .pdf-btn, .lang-switcher { display: none !important; }
       body { background: #fff; }
-      .cover, .chart-card, .data-table-wrap, .reco-card, .budget-table, .kpi-strip, .insight, .audience-card { break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .cover, .chart-card, .data-table-wrap, .reco-card, .budget-table,
+      .kpi-strip, .insight, .audience-card {
+        break-inside: avoid;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      /* Keep section label glued to its title */
+      .section-label { break-after: avoid; }
+      .section-title { break-before: avoid; break-after: avoid; }
+      /* Keep chart grids together */
+      .chart-grid { break-inside: avoid; }
+      /* Keep reco grid together */
+      .reco-grid { break-inside: avoid; }
+      /* Keep audience grid together */
+      .audience-grid { break-inside: avoid; }
+      /* Dividers don't need to be at the top of a page */
+      .divider { break-after: avoid; }
       .page { padding: 0 40px 40px; }
     }
   </style>
